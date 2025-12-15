@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id             Int      @id @default(autoincrement())
+  binance_uid    String   @unique
+  emailHash      String   @unique
+  emailEncrypted String
+  walletAddress  String   @unique
+  identityHash   String   @unique
+  signature      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ReclaimSession {
+  sessionId      String   @id
+  binance_uid    String?
+  emailHash      String?
+  emailEncrypted String?
+  userId         String?
+  status         String   @default("PENDING")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("reclaim_session")
+}
+
+model MagicLink {
+  id        Int      @id @default(autoincrement())
+  email     String
+  emailHash String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AuthSession {
+  id           Int      @id @default(autoincrement())
+  email        String
+  emailHash    String
+  sessionToken String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+}
