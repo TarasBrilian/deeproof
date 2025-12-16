@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client'
 
 const { Pool } = pg
 
-const connectionString = "postgresql://postgres:root@localhost:5432/deeproof_db"
+const connectionString = process.env.DATABASE_URL; //prod
 
 console.log("🔌 FORCE CONNECT TO:", connectionString);
 

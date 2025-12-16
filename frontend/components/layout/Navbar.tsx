@@ -32,7 +32,7 @@ export function Navbar() {
             { name: "Verify", href: "/apps/verify" },
         ]
         : [
-            { name: "Documentation", href: "https://docs.deeproof.xyz" },
+            { name: "Documentation", href: "https://deeproof.gitbook.io/docs" },
             { name: "Technology", href: "#technology" },
             { name: "Protocol", href: "#protocol" },
         ];

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Login to Demo ICO Platform">
+    <title>Login | Demo ICO Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="navbar-brand">
+                🚀 Demo ICO
+            </a>
+            <ul class="navbar-nav">
+                <li><a href="login.html" class="active">Login</a></li>
+                <li><a href="register.html">Register</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Login Form -->
+    <div class="centered-content">
+        <div class="card auth-card fade-in">
+            <div class="card-header">
+                <h2>Welcome Back</h2>
+                <p>Login to your account</p>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label" for="email">Email Address</label>
+                    <input type="email" id="email" class="form-input" placeholder="your@email.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <input type="password" id="password" class="form-input" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block btn-lg" id="submitBtn">
+                    Login
+                </button>
+            </form>
+
+            <p class="text-center mt-3 text-muted">
+                Don't have an account? <a href="register.html">Register here</a>
+            </p>
+
+            <!-- Deeproof Note -->
+            <div class="alert alert-info mt-3">
+                <span class="alert-icon">🔐</span>
+                <div>
+                    <strong>KYC via Deeproof</strong><br>
+                    After login, verify your KYC status via Deeproof.<br>
+                    You must have completed KYC on Deeproof first.
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        // Check if already logged in
+        if (DemoICOApi.isLoggedIn()) {
+            window.location.href = 'dashboard.html';
+        }
+
+        const form = document.getElementById('loginForm');
+        const alertContainer = document.getElementById('alertContainer');
+        const submitBtn = document.getElementById('submitBtn');
+
+        function showAlert(message, type = 'error') {
+            const iconMap = {
+                success: '✅',
+                error: '❌',
+                info: 'ℹ️'
+            };
+
+            alertContainer.innerHTML = `
+        <div class="alert alert-${type} fade-in">
+          <span class="alert-icon">${iconMap[type]}</span>
+          <span>${message}</span>
+        </div>
+      `;
+        }
+
+        function setLoading(loading) {
+            if (loading) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner"></span> Logging in...';
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Login';
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            setLoading(true);
+            alertContainer.innerHTML = '';
+
+            try {
+                const result = await DemoICOApi.login(email, password);
+
+                if (result.success) {
+                    showAlert('Login successful! Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1000);
+                } else {
+                    showAlert(result.error || 'Login failed');
+                    setLoading(false);
+                }
+            } catch (error) {
+                showAlert('Connection error. Make sure the backend is running on port 4000.');
+                setLoading(false);
+            }
+        });
+    </script>
+</body>
+
+</html>

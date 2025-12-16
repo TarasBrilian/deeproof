@@ -88,7 +88,6 @@ router.post('/send-magic-link', async (req, res) => {
     }
 });
 
-
 /**
  * Verify magic link token
  * GET /api/auth/verify-magic-link
@@ -284,6 +283,69 @@ router.post('/verify-email-match', async (req, res) => {
 
     } catch (error) {
         console.error('Error verifying email match:', error);
+        res.status(500).json(errorResponse(error.message));
+    }
+});
+
+/**
+ * =============================================================================
+ * PARTNER INTEGRATION: Blind Hash Verification
+ * POST /api/auth/verify-hash
+ * =============================================================================
+ * 
+ * This endpoint is for EXTERNAL PARTNER integration (e.g., ICO platforms).
+ * Partners can verify if a user is KYC'd on Deeproof WITHOUT seeing any personal data.
+ * 
+ * PRIVACY GUARANTEE: Only a cryptographic hash is exchanged ("Blind Matching")
+ */
+router.post('/verify-hash', async (req, res) => {
+    try {
+        const { emailHash } = req.body;
+
+        if (!emailHash) {
+            return res.status(400).json(errorResponse('emailHash is required'));
+        }
+
+        console.log('🔐 Partner Hash Verification Request');
+        console.log('   Hash:', emailHash.substring(0, 16) + '...');
+
+        // Check if a verified user exists with this email hash
+        const user = await prisma.user.findUnique({
+            where: { emailHash }
+        });
+
+        if (user) {
+            console.log('✅ Hash found - user is KYC verified');
+            return res.json(successResponse({
+                verified: true,
+                message: 'User is KYC verified via Deeproof'
+            }));
+        }
+
+        // Also check ReclaimSession for users who completed KYC but haven't bound wallet yet
+        const reclaimSession = await prisma.reclaimSession.findFirst({
+            where: {
+                emailHash,
+                status: 'VERIFIED'
+            }
+        });
+
+        if (reclaimSession) {
+            console.log('✅ Hash found in verified sessions');
+            return res.json(successResponse({
+                verified: true,
+                message: 'User is KYC verified via Deeproof'
+            }));
+        }
+
+        console.log('❌ Hash not found - user not verified');
+        return res.json(successResponse({
+            verified: false,
+            message: 'No verified identity found for this hash'
+        }));
+
+    } catch (error) {
+        console.error('Error verifying hash:', error);
         res.status(500).json(errorResponse(error.message));
     }
 });

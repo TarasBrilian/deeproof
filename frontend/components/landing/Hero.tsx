@@ -21,7 +21,7 @@ export function Hero() {
                         Start Binding
                         <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
                     </Link>
-                    <Link href="/docs" target="_blank" className={buttonVariants({ variant: "secondary", className: "w-full sm:w-auto" })}>
+                    <Link href="https://deeproof.gitbook.io/docs" target="_blank" className={buttonVariants({ variant: "secondary", className: "w-full sm:w-auto" })}>
                         Read Documentation
                     </Link>
                 </div>

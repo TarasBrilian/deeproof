@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Your Demo ICO Dashboard - Participate in ICO with Deeproof KYC">
+    <title>Dashboard | Demo ICO Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="navbar-brand">
+                🚀 Demo ICO
+            </a>
+            <ul class="navbar-nav">
+                <li>
+                    <span id="userEmail" style="color: var(--text-muted);">Loading...</span>
+                </li>
+                <li>
+                    <a href="#" id="logoutBtn" style="color: var(--error-color);">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Dashboard Content -->
+    <div class="centered-content" style="align-items: flex-start; padding-top: 3rem;">
+        <div class="card dashboard-card fade-in">
+            <div class="card-header">
+                <h2>🎯 Dashboard</h2>
+                <p>Participate in the Demo ICO</p>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- KYC Status Section -->
+            <section>
+                <h3>KYC Verification Status</h3>
+
+                <!-- KYC Status Box - Changes based on state -->
+                <div id="kycStatus" class="kyc-status pending">
+                    <div class="status-icon">⏳</div>
+                    <div class="status-text">KYC Not Verified</div>
+                    <div class="status-description">
+                        Verification required to participate in ICO
+                    </div>
+                </div>
+
+                <!-- Verify Button (shown when not verified) -->
+                <div id="verifySection">
+                    <button id="verifyBtn" class="btn btn-primary btn-block btn-lg">
+                        🔐 Verify via Deeproof
+                    </button>
+
+                    <!-- Privacy Explanation -->
+                    <div class="privacy-notice">
+                        <h4>🛡️ How This Works</h4>
+                        <ul>
+                            <li>We hash your email using SHA-256</li>
+                            <li>Only the hash is sent to Deeproof</li>
+                            <li>Deeproof confirms if you're verified</li>
+                            <li>No personal data is shared between platforms</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ICO Participation Section -->
+            <section class="ico-section" id="icoSection">
+                <h3>🚀 ICO Participation</h3>
+
+                <div id="icoContent">
+                    <!-- Content changes based on KYC status -->
+                    <div id="icoLocked" class="text-center">
+                        <p class="text-muted">
+                            Complete KYC verification to unlock ICO participation.
+                        </p>
+                        <button class="btn btn-secondary btn-block" disabled>
+                            🔒 Participate in ICO
+                        </button>
+                    </div>
+
+                    <div id="icoUnlocked" class="hidden">
+                        <div class="alert alert-success">
+                            <span class="alert-icon">✅</span>
+                            <div>
+                                <strong>You're verified!</strong><br>
+                                You can now participate in the ICO.
+                            </div>
+                        </div>
+
+                        <div style="text-align: center; margin: 2rem 0;">
+                            <p style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary);">
+                                Token Sale: DEMO Token
+                            </p>
+                            <p class="text-muted">
+                                Price: 1 DEMO = $0.10 USD
+                            </p>
+                            <p class="text-muted">
+                                Min. Purchase: 100 DEMO ($10)
+                            </p>
+                        </div>
+
+                        <button class="btn btn-success btn-block btn-lg"
+                            onclick="alert('🎉 This is a demo! In production, this would connect to a smart contract.')">
+                            💰 Participate in ICO
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Deeproof Branding -->
+            <div class="deeproof-badge">
+                <span>🔒</span>
+                <span>Powered by <strong>Deeproof</strong> — Deep Verification, Zero Disclosure</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        /**
+         * ==========================================================================
+         * Dashboard Logic
+         * ==========================================================================
+         * 
+         * This file demonstrates the complete KYC verification flow:
+         * 1. User logs in → sees "KYC Not Verified" status
+         * 2. User clicks "Verify via Deeproof"
+         * 3. Backend hashes email → calls Deeproof API
+         * 4. If Deeproof confirms → status changes to "Verified"
+         * 5. ICO participation unlocked
+         * 
+         * KEY PRIVACY POINT:
+         * - We NEVER send raw email to Deeproof
+         * - Deeproof NEVER sends us user data
+         * - Only a SHA-256 hash is exchanged
+         * - This is called "Blind Matching"
+         * 
+         * ==========================================================================
+         */
+
+        // Check authentication
+        if (!DemoICOApi.isLoggedIn()) {
+            window.location.href = 'login.html';
+        }
+
+        // DOM Elements
+        const userEmailEl = document.getElementById('userEmail');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const alertContainer = document.getElementById('alertContainer');
+        const kycStatusEl = document.getElementById('kycStatus');
+        const verifySection = document.getElementById('verifySection');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const icoLocked = document.getElementById('icoLocked');
+        const icoUnlocked = document.getElementById('icoUnlocked');
+
+        // State
+        let isVerifying = false;
+
+        /**
+         * Update the KYC status UI
+         */
+        function updateKYCStatus(status, message, description) {
+            const iconMap = {
+                pending: '⏳',
+                verified: '✅',
+                failed: '❌'
+            };
+
+            kycStatusEl.className = `kyc-status ${status}`;
+            kycStatusEl.innerHTML = `
+        <div class="status-icon">${iconMap[status]}</div>
+        <div class="status-text">${message}</div>
+        <div class="status-description">${description}</div>
+      `;
+
+            // Show/hide verify button
+            if (status === 'verified') {
+                verifySection.classList.add('hidden');
+                icoLocked.classList.add('hidden');
+                icoUnlocked.classList.remove('hidden');
+            } else if (status === 'failed') {
+                verifySection.classList.remove('hidden');
+                verifyBtn.textContent = '🔄 Try Again';
+            }
+        }
+
+        /**
+         * Show alert message
+         */
+        function showAlert(message, type = 'info') {
+            const iconMap = {
+                success: '✅',
+                error: '❌',
+                info: 'ℹ️'
+            };
+
+            alertContainer.innerHTML = `
+        <div class="alert alert-${type} fade-in">
+          <span class="alert-icon">${iconMap[type]}</span>
+          <span>${message}</span>
+        </div>
+      `;
+        }
+
+        /**
+         * Initialize dashboard
+         */
+        async function initDashboard() {
+            try {
+                // Get current user info
+                const result = await DemoICOApi.getCurrentUser();
+
+                if (!result.success) {
+                    // Session expired
+                    localStorage.clear();
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                // Display user email (masked for privacy)
+                const email = result.user.email;
+                const maskedEmail = email.replace(/(.{2}).+(@.+)/, '$1***$2');
+                userEmailEl.textContent = maskedEmail;
+
+                // Check if already KYC verified
+                if (result.user.kycVerified) {
+                    updateKYCStatus(
+                        'verified',
+                        'KYC Verified via Deeproof',
+                        `Verified on ${new Date(result.user.kycVerifiedAt).toLocaleDateString()}`
+                    );
+                }
+
+            } catch (error) {
+                showAlert('Failed to load user data. Please try again.', 'error');
+            }
+        }
+
+        /**
+         * Handle KYC verification
+         * 
+         * This is the KEY integration point with Deeproof!
+         * 
+         * What happens:
+         * 1. We call our backend /api/verify-kyc
+         * 2. Backend takes the logged-in user's email
+         * 3. Backend hashes it: SHA256(lowercase(trim(email)))
+         * 4. Backend sends ONLY the hash to Deeproof
+         * 5. Deeproof checks if any verified user has this hash
+         * 6. Deeproof returns: { verified: true/false }
+         * 7. We update the UI accordingly
+         * 
+         * NO PERSONAL DATA is ever exchanged!
+         */
+        async function handleVerifyKYC() {
+            if (isVerifying) return;
+
+            isVerifying = true;
+            verifyBtn.disabled = true;
+            verifyBtn.innerHTML = '<span class="spinner"></span> Verifying with Deeproof...';
+            alertContainer.innerHTML = '';
+
+            try {
+                console.log('🔐 Starting KYC verification via Deeproof...');
+
+                // Call our backend which handles the Deeproof integration
+                const result = await DemoICOApi.verifyKYC();
+
+                console.log('📨 Verification result:', result);
+
+                if (result.success) {
+                    if (result.verified) {
+                        // SUCCESS! User is verified via Deeproof
+                        updateKYCStatus(
+                            'verified',
+                            'KYC Verified via Deeproof',
+                            result.note || 'Your identity was verified without sharing personal data'
+                        );
+
+                        showAlert(
+                            '🎉 Congratulations! Your KYC has been verified via Deeproof. You can now participate in the ICO!',
+                            'success'
+                        );
+
+                    } else {
+                        // User not found in Deeproof's verified users
+                        updateKYCStatus(
+                            'failed',
+                            'KYC Verification Failed',
+                            result.note || 'No matching identity found in Deeproof'
+                        );
+
+                        showAlert(
+                            '⚠️ Your email was not found in Deeproof\'s verified users. Please complete KYC on Deeproof first, then try again.',
+                            'error'
+                        );
+                    }
+                } else {
+                    showAlert(result.error || 'Verification failed', 'error');
+                }
+
+            } catch (error) {
+                console.error('Verification error:', error);
+                showAlert(
+                    'Connection error. Make sure the backend is running on port 4000.',
+                    'error'
+                );
+            } finally {
+                isVerifying = false;
+                verifyBtn.disabled = false;
+                verifyBtn.textContent = '🔐 Verify via Deeproof';
+            }
+        }
+
+        /**
+         * Handle logout
+         */
+        async function handleLogout() {
+            await DemoICOApi.logout();
+            window.location.href = 'login.html';
+        }
+
+        // Event Listeners
+        verifyBtn.addEventListener('click', handleVerifyKYC);
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            handleLogout();
+        });
+
+        // Initialize
+        initDashboard();
+    </script>
+</body>
+
+</html>

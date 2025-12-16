@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Create your Demo ICO account">
+    <title>Register | Demo ICO Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="navbar-brand">
+                🚀 Demo ICO
+            </a>
+            <ul class="navbar-nav">
+                <li><a href="login.html">Login</a></li>
+                <li><a href="register.html" class="active">Register</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Registration Form -->
+    <div class="centered-content">
+        <div class="card auth-card fade-in">
+            <div class="card-header">
+                <h2>Create Account</h2>
+                <p>Join Demo ICO Platform</p>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <form id="registerForm">
+                <div class="form-group">
+                    <label class="form-label" for="email">Email Address</label>
+                    <input type="email" id="email" class="form-input" placeholder="your@email.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <input type="password" id="password" class="form-input" placeholder="••••••••" minlength="6"
+                        required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" class="form-input" placeholder="••••••••" minlength="6"
+                        required>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block btn-lg" id="submitBtn">
+                    Create Account
+                </button>
+            </form>
+
+            <p class="text-center mt-3 text-muted">
+                Already have an account? <a href="login.html">Login here</a>
+            </p>
+
+            <!-- Privacy Notice -->
+            <div class="privacy-notice mt-3">
+                <h4>🔒 Your Privacy Matters</h4>
+                <ul>
+                    <li>We only store your email hash for verification</li>
+                    <li>KYC data is never stored on our servers</li>
+                    <li>Verification happens via Deeproof securely</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        // Check if already logged in
+        if (DemoICOApi.isLoggedIn()) {
+            window.location.href = 'dashboard.html';
+        }
+
+        const form = document.getElementById('registerForm');
+        const alertContainer = document.getElementById('alertContainer');
+        const submitBtn = document.getElementById('submitBtn');
+
+        function showAlert(message, type = 'error') {
+            const iconMap = {
+                success: '✅',
+                error: '❌',
+                info: 'ℹ️'
+            };
+
+            alertContainer.innerHTML = `
+        <div class="alert alert-${type} fade-in">
+          <span class="alert-icon">${iconMap[type]}</span>
+          <span>${message}</span>
+        </div>
+      `;
+        }
+
+        function setLoading(loading) {
+            if (loading) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner"></span> Creating Account...';
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Account';
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // Validation
+            if (password !== confirmPassword) {
+                showAlert('Passwords do not match');
+                return;
+            }
+
+            if (password.length < 6) {
+                showAlert('Password must be at least 6 characters');
+                return;
+            }
+
+            setLoading(true);
+            alertContainer.innerHTML = '';
+
+            try {
+                const result = await DemoICOApi.register(email, password);
+
+                if (result.success) {
+                    showAlert('Account created successfully! Redirecting to login...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 1500);
+                } else {
+                    showAlert(result.error || 'Registration failed');
+                    setLoading(false);
+                }
+            } catch (error) {
+                showAlert('Connection error. Make sure the backend is running on port 4000.');
+                setLoading(false);
+            }
+        });
+    </script>
+</body>
+
+</html>
